@@ -30,6 +30,7 @@ class SiteStorage(object):
         self.db_checked = False  # Checked db tables since startup
         self.event_db_busy = None  # Gevent AsyncResult if db is working on rebuild
         self.has_db = self.isFile("dbschema.json")  # The site has schema
+        self.files_cache = {}
 
         if not os.path.isdir(self.directory):
             if allow_create:
@@ -303,8 +304,30 @@ class SiteStorage(object):
 
     # Load and parse json file
     def loadJson(self, inner_path):
+        file_path = self.getPath(inner_path)
+
+        mtime = os.path.getmtime(file_path)
+        size = os.path.getsize(file_path)
+
+        file_path = self.getPath(inner_path)
+
+        if file_path in self.files_cache:
+            cache = self.files_cache[file_path]
+
+            if cache["size"] == size and cache["mtime"] == mtime:
+#                self.log.debug("Loaded json from cache: %s" % (inner_path, ))
+                return cache["content"]
+
         with self.open(inner_path) as file:
-            return json.load(file)
+            content = json.load(file)
+
+            self.files_cache[file_path] = {
+                "size": size,
+                "mtime": mtime,
+                "content": content
+            }
+
+            return content
 
     def formatJson(self, data):
         content = json.dumps(data, indent=1, sort_keys=True)
