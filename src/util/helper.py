@@ -345,3 +345,19 @@ def encodeResponse(func):
             yield back.encode()
 
     return wrapper
+
+
+def prettySize(size):
+    if size < 1:
+        return "0B"
+
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size < 1024:
+            if unit == "B":
+                return "%dB" % size
+
+            return "%3.2f%s" % (size, unit)
+
+        size /= 1024
+
+    return "%.2fPB" % size

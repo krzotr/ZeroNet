@@ -77,3 +77,17 @@ class TestHelper:
 
         os.unlink(locked_f.name)
         os.unlink(locked_f_different.name)
+
+    def testPrettySize(self):
+        assert helper.prettySize(0) == "0B"
+        assert helper.prettySize(100) == "100B"
+        assert helper.prettySize(1024) == "1.00KB"
+        assert helper.prettySize(1024 * 1024) == "1.00MB"
+        assert helper.prettySize(1024 * 1024 * 1024) == "1.00GB"
+        assert helper.prettySize(1024 * 1024 * 1024 * 1024) == "1.00TB"
+        assert helper.prettySize(1024 * 1024 * 1024 * 1024 * 1024) == "1.00PB"
+        assert helper.prettySize(1024 * 1024 * 1024 * 1024 * 1024 * 1024) == "1024.00PB"
+        assert helper.prettySize(1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024) == "1048576.00PB"
+
+        assert helper.prettySize(700 * 1024 * 1024) == "700.00MB"
+        assert helper.prettySize(55 * 1024 * 1024 + 512 * 1024 + 5 * 1024 + 512) == "55.51MB"

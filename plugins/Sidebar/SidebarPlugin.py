@@ -143,8 +143,8 @@ class UiWebsocketPlugin(object):
         """.replace("{local_html}", local_html)))
 
     def sidebarRenderTransferStats(self, body, site):
-        recv = float(site.settings.get("bytes_recv", 0)) / 1024 / 1024
-        sent = float(site.settings.get("bytes_sent", 0)) / 1024 / 1024
+        recv = float(site.settings.get("bytes_recv", 0))
+        sent = float(site.settings.get("bytes_sent", 0))
         transfer_total = recv + sent
         if transfer_total:
             percent_recv = recv / transfer_total
@@ -152,6 +152,9 @@ class UiWebsocketPlugin(object):
         else:
             percent_recv = 0.5
             percent_sent = 0.5
+
+        formatted_recv = helper.prettySize(recv)
+        formatted_sent = helper.prettySize(sent)
 
         body.append(_("""
             <li>
@@ -161,8 +164,8 @@ class UiWebsocketPlugin(object):
               <li style='width: {percent_sent:.0%}' class='sent back-green' title="{_[Sent bytes]}"></li>
              </ul>
              <ul class='graph-legend'>
-              <li class='color-yellow'><span>{_[Received]}:</span><b>{recv:.2f}MB</b></li>
-              <li class='color-green'<span>{_[Sent]}:</span><b>{sent:.2f}MB</b></li>
+              <li class='color-yellow'><span>{_[Received]}:</span><b>{formatted_recv}</b></li>
+              <li class='color-green'<span>{_[Sent]}:</span><b>{formatted_sent}</b></li>
              </ul>
             </li>
         """))
@@ -255,12 +258,9 @@ class UiWebsocketPlugin(object):
             else:
                 title = extension
 
-            if size > 1024 * 1024 * 10:  # Format as mB is more than 10mB
-                size_formatted = "%.0fMB" % (size / 1024 / 1024)
-            else:
-                size_formatted = "%.0fkB" % (size / 1024)
+            formatted_size = helper.prettySize(size)
 
-            body.append("<li class='color-%s'><span>%s:</span><b>%s</b></li>" % (color, _[title], size_formatted))
+            body.append("<li class='color-%s'><span>%s:</span><b>%s</b></li>" % (color, _[title], formatted_size))
 
         body.append("</ul></li>")
 
@@ -270,9 +270,11 @@ class UiWebsocketPlugin(object):
         size_limit = site.getSizeLimit()
         percent_used = size / size_limit
 
+        formatted_free_space = helper.prettySize(free_space)
+
         body.append(_("""
             <li>
-             <label>{_[Size limit]} <small>({_[limit used]}: {percent_used:.0%}, {_[free space]}: {free_space:,.0f}MB)</small></label>
+             <label>{_[Size limit]} <small>({_[limit used]}: {percent_used:.0%}, {_[free space]}: {formatted_free_space})</small></label>
              <input type='text' class='text text-num' value="{size_limit}" id='input-sitelimit'/><span class='text-post'>MB</span>
              <a href='#Set' class='button' id='button-sitelimit'>{_[Set]}</a>
             </li>
@@ -287,8 +289,8 @@ class UiWebsocketPlugin(object):
 
         percent_downloaded = size_downloaded / size_total
 
-        size_formatted_total = size_total / 1024 / 1024
-        size_formatted_downloaded = size_downloaded / 1024 / 1024
+        formatted_size_total = helper.prettySize(size_total)
+        formatted_size_downloaded = helper.prettySize(size_downloaded)
 
         body.append(_("""
             <li>
@@ -298,8 +300,8 @@ class UiWebsocketPlugin(object):
               <li style='width: {percent_downloaded:.0%}' class='connected back-green' title='{_[Downloaded files]}'></li>
              </ul>
              <ul class='graph-legend'>
-              <li class='color-green'><span>{_[Downloaded]}:</span><b>{size_formatted_downloaded:.2f}MB</b></li>
-              <li class='color-black'><span>{_[Total]}:</span><b>{size_formatted_total:.2f}MB</b></li>
+              <li class='color-green'><span>{_[Downloaded]}:</span><b>{formatted_size_downloaded}</b></li>
+              <li class='color-black'><span>{_[Total]}:</span><b>{formatted_size_total}</b></li>
              </ul>
             </li>
         """))
@@ -359,16 +361,18 @@ class UiWebsocketPlugin(object):
     def sidebarRenderDbOptions(self, body, site):
         if site.storage.db:
             inner_path = site.storage.getInnerPath(site.storage.db.db_path)
-            size = float(site.storage.getSize(inner_path)) / 1024
+            size = float(site.storage.getSize(inner_path))
             feeds = len(site.storage.db.schema.get("feeds", {}))
         else:
             inner_path = _["No database found"]
             size = 0.0
             feeds = 0
 
+        formatted_size = helper.prettySize(size)
+
         body.append(_("""
             <li>
-             <label>{_[Database]} <small>({size:.2f}kB, {_[search feeds]}: {_[{feeds} query]})</small></label>
+             <label>{_[Database]} <small>({formatted_size}, {_[search feeds]}: {_[{feeds} query]})</small></label>
              <div class='flex'>
               <input type='text' class='text disabled' value="{inner_path}" disabled='disabled'/>
               <a href='#Reload' id="button-dbreload" class='button'>{_[Reload]}</a>
@@ -391,9 +395,12 @@ class UiWebsocketPlugin(object):
         else:
             quota = used = 0
 
+        formatted_used = helper.prettySize(used)
+        formatted_quota = helper.prettySize(quota)
+
         body.append(_("""
             <li>
-             <label>{_[Identity address]} <small>({_[limit used]}: {used:.2f}kB / {quota:.2f}kB)</small></label>
+             <label>{_[Identity address]} <small>({_[limit used]}: {formatted_used} / {formatted_quota})</small></label>
              <div class='flex'>
               <span class='input text disabled'>{auth_address}</span>
               <a href='#Change' class='button' id='button-identity'>{_[Change]}</a>
