@@ -110,7 +110,7 @@ class UiWebsocketPlugin(object):
 
     # Optional file functions
 
-    def actionOptionalFileList(self, to, address=None, orderby="time_downloaded DESC", limit=10, filter="downloaded", filter_inner_path=None):
+    def actionOptionalFileList(self, to, address=None, orderby="time_downloaded DESC", limit=10, filter="downloaded", filter_inner_path=None, offset=0):
         if not address:
             address = self.site.address
 
@@ -132,6 +132,9 @@ class UiWebsocketPlugin(object):
 
         if type(limit) != int:
             return self.response(to, "Invalid limit")
+
+        if type(offset) != int or offset < 0:
+            return self.response(to, "Invalid Offset")
 
         back = []
         content_db = self.site.content_manager.contents.db
@@ -158,7 +161,7 @@ class UiWebsocketPlugin(object):
         else:
             query_wheres_raw = ""
 
-        query = "SELECT * FROM file_optional %s WHERE ? %s ORDER BY %s LIMIT %s" % (join, query_wheres_raw, orderby, limit)
+        query = "SELECT * FROM file_optional %s WHERE ? %s ORDER BY %s LIMIT %d OFFSET %d" % (join, query_wheres_raw, orderby, limit, offset)
 
         for row in content_db.execute(query, wheres):
             row = dict(row)
