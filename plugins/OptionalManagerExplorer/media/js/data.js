@@ -5,6 +5,7 @@ class Page extends ZeroFrame {
     last_number_of_files = 0
     site_info = {}
     is_in_progress = false
+    filters = []
 
     // const
     STATE_NOT_DOWNLOADED = "not-downloaded"
@@ -28,6 +29,17 @@ class Page extends ZeroFrame {
             this.is_in_progress = false
 
             this.limit = parseInt(limit)
+            this.offset = 0
+            this.getFiles()
+        }
+
+        let filters_element = document.getElementById("filters")
+        filters_element.onclick = () => {
+            let filters = filters_element.options[filters_element.selectedIndex].value
+
+            this.is_in_progress = false
+
+            this.filters = filters
             this.offset = 0
             this.getFiles()
         }
@@ -57,6 +69,8 @@ class Page extends ZeroFrame {
             this.offset += this.limit
             this.getFiles()
         }
+
+
     }
 
     onOpenWebsocket () {
@@ -86,10 +100,10 @@ class Page extends ZeroFrame {
         this.is_in_progress = true
 
         this.cmd("optionalFileList", {
-            "filter": "ignore_piecemap",
+            "filter": ["ignore_piecemap"].concat(this.filters),
             "limit": this.limit,
             "offset": this.offset,
-            "orderby": "time_added DESC, file_id ASC",
+            "orderby": "time_added DESC, peer DESC, file_id DESC",
             "address": this.address
         }, (resp) => {
             if ("error" in resp) {
@@ -113,6 +127,7 @@ class Page extends ZeroFrame {
             header_html += "<th>D / T</th>"
             header_html += "<th>P</th>"
             header_html += "<th>S / L</th>"
+            header_html += "<th>H</th>"
             header_html += "</tr>"
 
             table.insertAdjacentHTML("beforeend", header_html)
@@ -157,6 +172,7 @@ class Page extends ZeroFrame {
         html += "<td>" + file.pieces_downloaded + " / " + file.pieces + "</td>"
         html += "<td>" + file.peer + "</td>"
         html += "<td>" + file.peer_seed + " / " + file.peer_leech + "</td>"
+        html += "<td>" + (file.peer_seed > 0 ? "1": '' ) + "</td>"
 
         html += "</tr>"
 
@@ -164,6 +180,8 @@ class Page extends ZeroFrame {
     }
 
     normalizeFile(file) {
+
+        console.log(file)
         var entity = {
             address: file.address,
             bytes_downloaded: file.bytes_downloaded,
@@ -205,6 +223,7 @@ class Page extends ZeroFrame {
         if (entity.state == this.STATE_DOWNLOADED) {
             entity.downloaded_percent = 100
         }
+
 
         return entity
     }

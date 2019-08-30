@@ -11,7 +11,7 @@ div#table {
 }
 
 table {font-size: 12px;    font-family: Roboto, 'Segoe UI', Arial, 'Helvetica Neue'; border-spacing: 0}
-th {text-transform: uppercase; color: #8984c2; padding: 15px 20px;}
+th {text-transform: uppercase; color: #8984c2; padding: 15px;text-align: center}
 td {white-space: nowrap; padding: 2px 0 1px 10px;}
 tr.downloaded {background-color: #0f0}
 tr.downloading {background-color: #0ff}
@@ -25,12 +25,18 @@ tr.downloading td:hover, tr.not-downloaded td:hover {cursor: pointer;}
 
 <div class="content">
     <h1>List of optional files</h1>
-    <div id="filters">
+    <div>
         <select id="limit">
             <option>25</option>
             <option selected="selected">40</option>
             <option>50</option>
             <option>100</option>
+        </select>
+
+        <select id="filters">
+            <option value="" selected="selected">All files</option>
+            <option value="downloaded">Downloaded only</option>
+            <option value="notdownloaded">Not downloaded</option>
         </select>
      </div>
 
