@@ -143,10 +143,14 @@ class UiWebsocketPlugin(object):
         wheres_raw = []
         if "bigfile" in filter:
             wheres["size >"] = 1024 * 1024 * 10
+        if "ignore_piecemap" in filter:
+            wheres["not__inner_path__like"] = "%.piecemap.msgpack"
         if "downloaded" in filter:
             wheres_raw.append("(is_downloaded = 1 OR is_pinned = 1)")
         if "pinned" in filter:
             wheres["is_pinned"] = 1
+        if "ignore_piecemap" in filter:
+            wheres["not__inner_path__like"] = "%.piecemap.msgpack"
         if filter_inner_path:
             wheres["inner_path__like"] = filter_inner_path
 
