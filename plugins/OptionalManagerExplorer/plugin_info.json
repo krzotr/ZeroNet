@@ -1,0 +1,5 @@
+{
+	"name": "OptionalManagerExplorer",
+	"description": "Optional Manager Explorer",
+	"default": "enabled"
+}

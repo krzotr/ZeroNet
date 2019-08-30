@@ -1,0 +1,54 @@
+<html>
+<body>
+
+<style>
+.content { line-height: 24px; font-family: monospace; font-size: 14px; color: #636363; position: relative; text-align: center; perspective: 1000px }
+.content h1, .content h2 { font-weight: normal; letter-spacing: 1px; }
+.content h2 { font-size: 15px; }
+
+div#table {
+ margin: 0px auto;
+}
+
+table {font-size: 12px;    font-family: Roboto, 'Segoe UI', Arial, 'Helvetica Neue'; border-spacing: 0}
+th {text-transform: uppercase; color: #8984c2; padding: 15px 20px;}
+td {white-space: nowrap; padding: 2px 0 1px 10px;}
+tr.downloaded {background-color: #0f0}
+tr.downloading {background-color: #0ff}
+tr.downloading:hover {background-color: #099}
+tr.not-downloaded {background-color: #f00}
+tr.not-downloaded:hover {background-color: #900}
+
+tr.downloading td:hover, tr.not-downloaded td:hover {cursor: pointer;}
+
+</style>
+
+<div class="content">
+    <h1>List of optional files</h1>
+    <div id="filters">
+        <select id="limit">
+            <option>25</option>
+            <option selected="selected">40</option>
+            <option>50</option>
+            <option>100</option>
+        </select>
+     </div>
+
+    <div id="pagination">
+        <button id="prev">Previous</button>
+        <button id="next">Next</button>
+    </div>
+
+
+     <table id="table">
+     </table>
+</div>
+
+<script type="text/javascript" src="js/ZeroFrame.js"></script>
+<script type="text/javascript" src="js/data.js"></script>
+
+<script>
+page = new Page();
+</script>
+</body>
+</html>
