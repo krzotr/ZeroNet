@@ -2,8 +2,9 @@ class Page extends ZeroFrame {
     address = ""
     limit = 40
     offset = 0
-    total_files = 0
+    last_number_of_files = 0
     site_info = {}
+    is_in_progress = false
 
     // const
     STATE_NOT_DOWNLOADED = "not-downloaded"
@@ -24,6 +25,8 @@ class Page extends ZeroFrame {
         limit_element.onclick = () => {
             let limit = limit_element.options[limit_element.selectedIndex].value
 
+            this.is_in_progress = false
+
             this.limit = parseInt(limit)
             this.offset = 0
             this.getFiles()
@@ -32,8 +35,11 @@ class Page extends ZeroFrame {
         let prev_element = document.getElementById("prev")
         prev_element.onclick = () => {
             if (this.offset - this.limit < 0) {
+                alert("Out of range!")
                 return
             }
+
+            this.is_in_progress = false
 
             this.offset -= this.limit
             this.getFiles()
@@ -41,9 +47,12 @@ class Page extends ZeroFrame {
 
         let next_element = document.getElementById("next")
         next_element.onclick = () => {
-            if (this.offset + this.limit > Math.ceil(this.total_files / this.limit) * this.limit) {
+            if (this.limit > this.last_number_of_files) {
+                alert("Out of range")
                 return
             }
+
+            this.is_in_progress = false
 
             this.offset += this.limit
             this.getFiles()
@@ -51,6 +60,15 @@ class Page extends ZeroFrame {
     }
 
     onOpenWebsocket () {
+        this.getFiles()
+    }
+
+    onRequest() {
+        if (this.is_in_progress) {
+            console.log("Got request")
+            return
+        }
+
         this.getFiles()
     }
 
@@ -65,17 +83,25 @@ class Page extends ZeroFrame {
     getFiles () {
         this.setVars()
 
+        this.is_in_progress = true
+
         this.cmd("optionalFileList", {
-            "filter": "",
+            "filter": "ignore_piecemap",
             "limit": this.limit,
             "offset": this.offset,
-            "orderby": "time_downloaded DESC, size DESC, file_id ASC",
+            "orderby": "time_added DESC, file_id ASC",
             "address": this.address
         }, (resp) => {
+            if ("error" in resp) {
+                alert("Got error:" + resp.error)
+                return
+            }
+
+            console.log("Got optionalFileList")
+
+
             var table = document.getElementById("table")
             table.innerHTML = ""
-
-            // console.log(resp)
 
             var header_html = ""
             header_html += "<tr>"
@@ -93,15 +119,13 @@ class Page extends ZeroFrame {
 
             var id = this.offset + 1
             for (var i in resp) {
-//                if (resp[i].inner_path.match(/\.piecemap\.msgpack$/)) {
-//                    continue
-//                }
-
                 var row_html = this.renderRow(this.normalizeFile(resp[i]), id)
 
                 table.insertAdjacentHTML("beforeend", row_html)
                 id += 1
             }
+
+            this.last_number_of_files = resp.length
 
             var events = document.getElementsByClassName("file_id")
 
@@ -115,6 +139,8 @@ class Page extends ZeroFrame {
                     this.cmd("fileNeed", inner_path + "|all")
                 }
             }
+
+            this.is_in_progress = false
         })
     }
 
