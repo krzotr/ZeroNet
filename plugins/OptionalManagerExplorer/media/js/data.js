@@ -16,6 +16,7 @@ class Page extends ZeroFrame {
     ELEMENT_PAGINATION_PREV = "pagination-prev"
     ELEMENT_LIMIT = "limit"
     ELEMENT_FILTERS = "filters"
+    ELEMENT_SORT = "sort"
     ELEMENT_TABLE = "table"
 
     constructor(url) {
@@ -60,6 +61,17 @@ class Page extends ZeroFrame {
             this.getFiles()
         }
 
+        let sort_element = document.getElementById(this.ELEMENT_SORT)
+        sort_element.onclick = () => {
+            let sort = sort_element.options[sort_element.selectedIndex].value
+
+            this.is_in_progress = false
+
+            this.sort = sort
+            this.offset = 0
+            this.getFiles()
+        }
+
         let prev_element = document.getElementById(this.ELEMENT_PAGINATION_PREV)
         prev_element.onclick = () => {
             if (this.offset - this.limit < 0) {
@@ -85,8 +97,6 @@ class Page extends ZeroFrame {
             this.offset += this.limit
             this.getFiles()
         }
-
-
     }
 
     onOpenWebsocket () {
@@ -119,7 +129,7 @@ class Page extends ZeroFrame {
             "filter": ["ignore_piecemap"].concat(this.filters),
             "limit": this.limit,
             "offset": this.offset,
-            "orderby": "time_added DESC, peer DESC, file_id DESC",
+            "orderby": this.sort,
             "address": this.address
         }, (resp) => {
             if ("error" in resp) {
@@ -128,7 +138,6 @@ class Page extends ZeroFrame {
             }
 
             console.log("Got optionalFileList")
-
 
             var table = document.getElementById(this.ELEMENT_TABLE)
             table.innerHTML = ""
@@ -142,9 +151,9 @@ class Page extends ZeroFrame {
             header_html += "<th scope='col' class='text-center'><abbr title='Size of the file in MB'>Size</abbr></th>"
             header_html += "<th scope='col' class='text-center'><abbr title='Percent of completed file'>%</abbr></th>"
             header_html += "<th scope='col' class='text-center'><abbr title='Downloaded parts / Total parts'>D / T</abbr></th>"
-            header_html += "<th scope='col' class='text-center'><abbr title='Number of peers'>P</abbr></th>"
-            header_html += "<th scope='col' class='text-center'><abbr title='Seeds / Leechers'>S / L</abbr></th>"
-            header_html += "<th scope='col' class='text-center'><abbr title='Health of file'>H</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Number of peers'><span class='oi oi-people'></span></abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Seeds / Leech'><span class='oi oi-people'></span> / <span class='oi oi-people'></span></abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Health of file'><span class='oi oi-signal'></span></abbr></th>"
             header_html += "</tr>"
             header_html += "</tbody>"
 
@@ -168,7 +177,9 @@ class Page extends ZeroFrame {
                 }
 
                 events[i].onclick = () => {
-                    let inner_path = events[i].getElementsByClassName("inner_path")[0].innerHTML
+                    let inner_path_element = events[i].getElementsByClassName("inner_path")[0]
+                    let inner_path = inner_path_element.getAttribute('data-inner-path')
+
                     this.cmd("fileNeed", inner_path + "|all")
                 }
             }
@@ -182,15 +193,15 @@ class Page extends ZeroFrame {
 
         html = '<tr id="fid-' + file.file_id + '" class="file_id ' + this.STATE_STYLES[file.state] + '">'
 
-        html += "<td>" + id + "</td>"
+        html += "<td class='text-center'>" + id + "</td>"
         html += "<td class='text-center'>" + this.STATE_SHORT[file.state] + "</td>"
-        html += "<td class='inner_path text-sm'><small>" + file.inner_path + "</small></td>"
+        html += "<td class='inner_path text-sm' data-inner-path='" + file.inner_path + "'><small>" + file.inner_path + "</small></td>"
         html += "<td class='text-center'><small>" + Math.round(file.size / 1024 / 1024, 2) + "MB</small></td>"
         html += "<td class='text-center'><small>" + file.downloaded_percent + "%</small></td>"
         html += "<td class='text-center'><small>" + file.pieces_downloaded + " / " + file.pieces + "</small></td>"
         html += "<td class='text-center'><small>" + file.peer + "</small></td>"
         html += "<td class='text-center'><small>" + file.peer_seed + " / " + file.peer_leech + "</small></td>"
-        html += "<td class='text-center'><span class='oi oi-signal signal-" + file.health + "'></span></td>"
+        html += "<td class='text-center' data-health='" + file.health + "'><span class='oi oi-signal signal-" + file.health + "'></span></td>"
 
         html += "</tr>"
 
