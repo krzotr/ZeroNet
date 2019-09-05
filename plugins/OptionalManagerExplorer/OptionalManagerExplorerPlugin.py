@@ -46,7 +46,7 @@ class UiRequestPlugin(object):
         self.sendHeader(extra_headers=extra_headers, script_nonce=script_nonce)
         return iter([super(UiRequestPlugin, self).renderWrapper(
             site, path, "uimedia/plugins/optionalmanagerexplorer/wrapper.html?address=" + address,
-            "Blacklisted site", extra_headers, show_loadingscreen=False, script_nonce=script_nonce
+            "Optional Manager Explorer", extra_headers, show_loadingscreen=False, script_nonce=script_nonce
         )])
 
     def actionUiMedia(self, path, *args, **kwargs):

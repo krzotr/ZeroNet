@@ -1,53 +1,98 @@
 <html>
-<body>
+<head>
+    <title>Optional Manager Explorer</title>
+<link rel="stylesheet" href="css/bootstrap.min.css" />
+<link rel="stylesheet" href="css/open-iconic-bootstrap.min.css" />
 
 <style>
-.content { line-height: 24px; font-family: monospace; font-size: 14px; color: #636363; position: relative; text-align: center; perspective: 1000px }
-.content h1, .content h2 { font-weight: normal; letter-spacing: 1px; }
-.content h2 { font-size: 15px; }
-
-div#table {
- margin: 0px auto;
+.table td, .table th {
+    padding: .3rem
 }
 
-table {font-size: 12px;    font-family: Roboto, 'Segoe UI', Arial, 'Helvetica Neue'; border-spacing: 0}
-th {text-transform: uppercase; color: #8984c2; padding: 15px;text-align: center}
-td {white-space: nowrap; padding: 2px 0 1px 10px;}
-tr.downloaded {background-color: #0f0}
-tr.downloading {background-color: #0ff}
-tr.downloading:hover {background-color: #099}
-tr.not-downloaded {background-color: #f00}
-tr.not-downloaded:hover {background-color: #900}
+table#table tr.table-danger:hover,
+table#table tr.table-warning:hover {
+    cursor: pointer;
 
-tr.downloading td:hover, tr.not-downloaded td:hover {cursor: pointer;}
+}
 
+.signal-0 {
+    color: #f00;
+}
+
+.signal-1 {
+    color: #a80;
+}
+
+.signal-2 {
+    color: #dd0;
+}
+
+.signal-3 {
+    color: #0c0;
+}
+
+#pagination-prev, #pagination-next {
+    cursor: pointer;
+}
 </style>
+</head>
+<body>
 
-<div class="content">
-    <h1>List of optional files</h1>
-    <div>
-        <select id="limit">
-            <option>25</option>
-            <option selected="selected">40</option>
-            <option>50</option>
-            <option>100</option>
-        </select>
-
-        <select id="filters">
-            <option value="" selected="selected">All files</option>
-            <option value="downloaded">Downloaded only</option>
-            <option value="notdownloaded">Not downloaded</option>
-        </select>
-     </div>
-
-    <div id="pagination">
-        <button id="prev">Previous</button>
-        <button id="next">Next</button>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col text-center">
+            <h1>List of optional files</h1>
+        </div>
     </div>
 
+    <div class="row justify-content-center">
+        <div class="col align-self-center">
+            <div class="form-group row">
+                <label for="limit" class="col-sm-1 col-form-label">Files on page</label>
+                <div class="col-sm-1">
+                    <select class="form-control" id="limit">
+                        <option>25</option>
+                        <option selected="selected">40</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                </div>
+            </div>
 
-     <table id="table">
-     </table>
+            <div class="form-group row">
+                <label for="filters" class="col-sm-1 col-form-label">Filters</label>
+                <div class="col-sm-1">
+                    <select class="form-control" id="filters">
+                        <option value="" selected="selected">All files</option>
+                        <option value="downloaded">Downloaded only</option>
+                        <option value="notdownloaded">Not downloaded</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group row">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <li class="page-item">
+                            <span class="btn btn-primary" id="pagination-prev"><span class="oi oi-media-skip-backward"></span> Previous</span>
+                        </li>
+                        <li class="page-item">
+                            <span class="btn btn-primary" id="pagination-next">Next <span class="oi oi-media-skip-forward"></span></span>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+     </div>
+
+
+    <div class="row">
+        <div class="col">
+            <table id="table" class="table table-striped table-hover">
+            </table>
+        </div>
+    </div>
 </div>
 
 <script type="text/javascript" src="js/ZeroFrame.js"></script>
@@ -56,5 +101,6 @@ tr.downloading td:hover, tr.not-downloaded td:hover {cursor: pointer;}
 <script>
 page = new Page();
 </script>
+
 </body>
 </html>

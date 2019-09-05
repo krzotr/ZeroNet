@@ -12,8 +12,24 @@ class Page extends ZeroFrame {
     STATE_DOWNLOADED = "downloaded"
     STATE_DOWNLOADING = "downloading"
 
+    ELEMENT_PAGINATION_NEXT = "pagination-next"
+    ELEMENT_PAGINATION_PREV = "pagination-prev"
+    ELEMENT_LIMIT = "limit"
+    ELEMENT_FILTERS = "filters"
+    ELEMENT_TABLE = "table"
+
     constructor(url) {
         super(url)
+
+        this.STATE_SHORT = {}
+        this.STATE_SHORT[this.STATE_NOT_DOWNLOADED] = "<span class='oi oi-media-stop'></span>"
+        this.STATE_SHORT[this.STATE_DOWNLOADED] = "<span class='oi oi-data-transfer-download'></span>"
+        this.STATE_SHORT[this.STATE_DOWNLOADING] = "<span class='oi oi-caret-right'></span>"
+
+        this.STATE_STYLES = {}
+        this.STATE_STYLES[this.STATE_NOT_DOWNLOADED] = "table-danger"
+        this.STATE_STYLES[this.STATE_DOWNLOADED] = "table-success"
+        this.STATE_STYLES[this.STATE_DOWNLOADING] = "table-warning"
 
         this.address = document.location.pathname.match(/([A-Za-z0-9\._-]+)/)[1]
     }
@@ -21,7 +37,7 @@ class Page extends ZeroFrame {
     setVars() {
         this.getNumberOfTotalFiles()
 
-        let limit_element = document.getElementById("limit")
+        let limit_element = document.getElementById(this.ELEMENT_LIMIT)
 
         limit_element.onclick = () => {
             let limit = limit_element.options[limit_element.selectedIndex].value
@@ -33,7 +49,7 @@ class Page extends ZeroFrame {
             this.getFiles()
         }
 
-        let filters_element = document.getElementById("filters")
+        let filters_element = document.getElementById(this.ELEMENT_FILTERS)
         filters_element.onclick = () => {
             let filters = filters_element.options[filters_element.selectedIndex].value
 
@@ -44,7 +60,7 @@ class Page extends ZeroFrame {
             this.getFiles()
         }
 
-        let prev_element = document.getElementById("prev")
+        let prev_element = document.getElementById(this.ELEMENT_PAGINATION_PREV)
         prev_element.onclick = () => {
             if (this.offset - this.limit < 0) {
                 alert("Out of range!")
@@ -57,7 +73,7 @@ class Page extends ZeroFrame {
             this.getFiles()
         }
 
-        let next_element = document.getElementById("next")
+        let next_element = document.getElementById(this.ELEMENT_PAGINATION_NEXT)
         next_element.onclick = () => {
             if (this.limit > this.last_number_of_files) {
                 alert("Out of range")
@@ -114,21 +130,23 @@ class Page extends ZeroFrame {
             console.log("Got optionalFileList")
 
 
-            var table = document.getElementById("table")
+            var table = document.getElementById(this.ELEMENT_TABLE)
             table.innerHTML = ""
 
             var header_html = ""
+            header_html += "<tbody class='thead-dark'>"
             header_html += "<tr>"
-            header_html += "<th>ID</th>"
-            header_html += "<th>State</th>"
-            header_html += "<th>Inner Path</th>"
-            header_html += "<th>Size</th>"
-            header_html += "<th>%</th>"
-            header_html += "<th>D / T</th>"
-            header_html += "<th>P</th>"
-            header_html += "<th>S / L</th>"
-            header_html += "<th>H</th>"
+            header_html += "<th scope='col' class='text-center'>#</th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='State of file: downloaded, downloading, not-downloaded'>State</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Path of file'>Inner Path</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Size of the file in MB'>Size</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Percent of completed file'>%</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Downloaded parts / Total parts'>D / T</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Number of peers'>P</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Seeds / Leechers'>S / L</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Health of file'>H</abbr></th>"
             header_html += "</tr>"
+            header_html += "</tbody>"
 
             table.insertAdjacentHTML("beforeend", header_html)
 
@@ -162,17 +180,17 @@ class Page extends ZeroFrame {
     renderRow(file, id) {
         var html = ""
 
-        html = '<tr id="fid-' + file.file_id + '" class="file_id ' + file.state + '">'
+        html = '<tr id="fid-' + file.file_id + '" class="file_id ' + this.STATE_STYLES[file.state] + '">'
 
         html += "<td>" + id + "</td>"
-        html += "<td>" + file.state + "</td>"
-        html += "<td class='inner_path'>" + file.inner_path + "</td>"
-        html += "<td>" + Math.round(file.size / 1024 / 1024, 2) + "MB</td>"
-        html += "<td>" + file.downloaded_percent + "%</td>"
-        html += "<td>" + file.pieces_downloaded + " / " + file.pieces + "</td>"
-        html += "<td>" + file.peer + "</td>"
-        html += "<td>" + file.peer_seed + " / " + file.peer_leech + "</td>"
-        html += "<td>" + (file.peer_seed > 0 ? "1": '' ) + "</td>"
+        html += "<td class='text-center'>" + this.STATE_SHORT[file.state] + "</td>"
+        html += "<td class='inner_path text-sm'><small>" + file.inner_path + "</small></td>"
+        html += "<td class='text-center'><small>" + Math.round(file.size / 1024 / 1024, 2) + "MB</small></td>"
+        html += "<td class='text-center'><small>" + file.downloaded_percent + "%</small></td>"
+        html += "<td class='text-center'><small>" + file.pieces_downloaded + " / " + file.pieces + "</small></td>"
+        html += "<td class='text-center'><small>" + file.peer + "</small></td>"
+        html += "<td class='text-center'><small>" + file.peer_seed + " / " + file.peer_leech + "</small></td>"
+        html += "<td class='text-center'><span class='oi oi-signal signal-" + file.health + "'></span></td>"
 
         html += "</tr>"
 
@@ -180,8 +198,6 @@ class Page extends ZeroFrame {
     }
 
     normalizeFile(file) {
-
-        console.log(file)
         var entity = {
             address: file.address,
             bytes_downloaded: file.bytes_downloaded,
@@ -209,7 +225,8 @@ class Page extends ZeroFrame {
             uploaded: file.uploaded,
 
             // Custom Fields
-            state: this.STATE_NOT_DOWNLOADED
+            state: this.STATE_NOT_DOWNLOADED,
+            health: 0
         }
 
         // Set state
@@ -224,6 +241,17 @@ class Page extends ZeroFrame {
             entity.downloaded_percent = 100
         }
 
+        if (entity.state == this.STATE_DOWNLOADED) {
+            entity.health = 3
+        } else if (file.peer > 0) {
+            if (file.peer_seed > 4) {
+                entity.health = 3
+            } else if (file.peer_seed > 1) {
+                entity.health = 2
+            } else {
+                entity.health = 1
+            }
+        }
 
         return entity
     }
