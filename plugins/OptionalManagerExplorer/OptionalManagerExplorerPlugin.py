@@ -44,6 +44,7 @@ class UiRequestPlugin(object):
         script_nonce = self.getScriptNonce()
 
         self.sendHeader(extra_headers=extra_headers, script_nonce=script_nonce)
+
         return iter([super(UiRequestPlugin, self).renderWrapper(
             site, path, "uimedia/plugins/optionalmanagerexplorer/wrapper.html?address=" + address,
             "Optional Manager Explorer", extra_headers, show_loadingscreen=False, script_nonce=script_nonce

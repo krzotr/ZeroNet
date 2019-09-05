@@ -6,6 +6,7 @@ class Page extends ZeroFrame {
     site_info = {}
     is_in_progress = false
     filters = []
+    piecemap = false
 
     // const
     STATE_NOT_DOWNLOADED = "not-downloaded"
@@ -18,6 +19,7 @@ class Page extends ZeroFrame {
     ELEMENT_FILTERS = "filters"
     ELEMENT_SORT = "sort"
     ELEMENT_TABLE = "table"
+    ELEMENT_PIECEMAP = "piecemap"
 
     constructor(url) {
         super(url)
@@ -57,6 +59,15 @@ class Page extends ZeroFrame {
             this.is_in_progress = false
 
             this.filters = filters
+            this.offset = 0
+            this.getFiles()
+        }
+
+        let piecemap_element = document.getElementById(this.ELEMENT_PIECEMAP)
+        piecemap_element.onclick = () => {
+            this.is_in_progress = false
+
+            this.piecemap = piecemap_element.checked
             this.offset = 0
             this.getFiles()
         }
@@ -126,7 +137,7 @@ class Page extends ZeroFrame {
         this.is_in_progress = true
 
         this.cmd("optionalFileList", {
-            "filter": ["ignore_piecemap"].concat(this.filters),
+            "filter": ["ignore_piecemapmsgpack", (this.piecemap ? "include_piecemap" : '')].concat(this.filters),
             "limit": this.limit,
             "offset": this.offset,
             "orderby": this.sort,
@@ -191,19 +202,84 @@ class Page extends ZeroFrame {
     renderRow(file, id) {
         var html = ""
 
-        html = '<tr id="fid-' + file.file_id + '" class="file_id ' + this.STATE_STYLES[file.state] + '">'
+        var piecemap = ""
 
+        if (file.state != this.STATE_DOWNLOADED) {
+            piecemap = this.getPiecemapHtml(file.piecemap)
+        }
+
+
+        html = '<tr id="fid-' + file.file_id + '" class="file_id ' + this.STATE_STYLES[file.state] + '">'
         html += "<td class='text-center'>" + id + "</td>"
         html += "<td class='text-center'>" + this.STATE_SHORT[file.state] + "</td>"
-        html += "<td class='inner_path text-sm' data-inner-path='" + file.inner_path + "'><small>" + file.inner_path + "</small></td>"
+        html += "<td class='inner_path text-sm' data-inner-path='" + file.inner_path + "'><small>" + file.inner_path + "</small>" + this.getProgressBarHTML(file.downloaded_percent) + piecemap + "</td>"
         html += "<td class='text-center'><small>" + Math.round(file.size / 1024 / 1024, 2) + "MB</small></td>"
         html += "<td class='text-center'><small>" + file.downloaded_percent + "%</small></td>"
         html += "<td class='text-center'><small>" + file.pieces_downloaded + " / " + file.pieces + "</small></td>"
         html += "<td class='text-center'><small>" + file.peer + "</small></td>"
         html += "<td class='text-center'><small>" + file.peer_seed + " / " + file.peer_leech + "</small></td>"
         html += "<td class='text-center' data-health='" + file.health + "'><span class='oi oi-signal signal-" + file.health + "'></span></td>"
-
         html += "</tr>"
+
+
+        return html
+    }
+
+    getProgressBarHTML(percent) {
+        if (percent == 0) {
+            //return ''
+        }
+
+        var html = ""
+
+        var style = "bg-success"
+
+        if (percent == 0) {
+            style = "bg-danger"
+        } else if (percent != 100) {
+            style = "bg-warning"
+        }
+
+        html += '<div class="progress" style="height: 4px;">'
+            html += '<div class="progress-bar ' + style + '" role="progressbar" style="width: ' + percent + '%" aria-valuenow="' + percent + '" aria-valuemin="0" aria-valuemax="100"></div>'
+        html += '</div>'
+
+        return html
+    }
+
+    getPiecemapHtml(piecemap) {
+        if (piecemap.length == 0) {
+            return ''
+        }
+
+        var html = ""
+
+        html += '<div class="container-fluid" style="margin-top: 10px">'
+
+            html += '<div class="row">'
+                for (var key in piecemap) {
+                    html += '<div class="col-2 text-right">'
+                        html += '<small>' + key + '</small>'
+                    html += '</div>'
+
+                    html += '<div class="col-10">'
+                        html += '<div class="progress" style="height: 10px; margin-top: 3px;">'
+
+                        var map = piecemap[key]
+
+                        var step = 1 / map.length * 100
+                        for (var i = 0; i < map.length; i++) {
+                            var style = (map[i] == '1' ? 'success' : 'danger')
+
+                            html += '<div class="progress-bar bg-' + style + '" role="progressbar" style="width: ' + step + '%" aria-valuenow="' + step + '" aria-valuemin="0" aria-valuemax="100"></div>'
+                        }
+
+                        html += '</div>'
+                    html += '</div>'
+                }
+            html += '</div>'
+
+        html += '</div>'
 
         return html
     }
@@ -220,6 +296,9 @@ class Page extends ZeroFrame {
             is_downloading: "is_downloading" in file ? (file.is_downloading ? true : false) : false,
             is_pinned: file.is_pinned ? true : false,
             peer: file.peer,
+
+            // New field
+            piecemap: "piecemap" in file ? file.piecemap : {},
 
             // Ext Stats
             peer_leech: "peer_leech" in file ? file.peer_leech : 0,
@@ -240,21 +319,30 @@ class Page extends ZeroFrame {
             health: 0
         }
 
-        // Set state
+        // Should be fine, but is some bug in Zeronet
         if (entity.is_downloading) {
             entity.state = this.STATE_DOWNLOADING
         } else if (entity.is_downloaded) {
             entity.state = this.STATE_DOWNLOADED
         }
 
-        // Set download_percent
+        // Workaround
+        if (entity.pieces > 0 && entity.pieces == entity.pieces_downloaded) {
+            entity.state = this.STATE_DOWNLOADED
+        } else if (entity.pieces_downloaded > 0 && entity.pieces != entity.pieces_downloaded) {
+            entity.state = this.STATE_DOWNLOADING
+        } else {
+            entity.state = this.STATE_NOT_DOWNLOADED
+        }
+
+        // Set downloaded_percent
         if (entity.state == this.STATE_DOWNLOADED) {
             entity.downloaded_percent = 100
         }
 
         if (entity.state == this.STATE_DOWNLOADED) {
             entity.health = 3
-        } else if (file.peer > 0) {
+        } else if (file.peer_seed > 0) {
             if (file.peer_seed > 4) {
                 entity.health = 3
             } else if (file.peer_seed > 1) {

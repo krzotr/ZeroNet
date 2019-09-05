@@ -46,7 +46,7 @@ class UiWebsocketPlugin(object):
         content_db.updatePeerNumbers()
         self.site.updateWebsocket(peernumber_updated=True)
 
-    def addBigfileInfo(self, row):
+    def addBigfileInfo(self, row, include_piecemap=False):
         global bigfile_sha512_cache
 
         content_db = self.site.content_manager.contents.db
@@ -69,7 +69,13 @@ class UiWebsocketPlugin(object):
         else:
             piecefield = None
 
+        if include_piecemap:
+            row["piecemap"] = {}
+
         if piecefield:
+            if include_piecemap:
+                row["piecemap"]["own"] = piecefield.replace(b"\x01", b"1").replace(b"\x00", b"0").decode()
+
             row["pieces"] = len(piecefield)
             row["pieces_downloaded"] = piecefield.count(b"\x01")
             row["downloaded_percent"] = 100 * row["pieces_downloaded"] / row["pieces"]
@@ -98,6 +104,9 @@ class UiWebsocketPlugin(object):
                 row["peer_seed"] += 1
             else:
                 row["peer_leech"] += 1
+
+            if include_piecemap:
+                row["piecemap"][peer.key] = peer_piecefield.replace(b"\x01", b"1").replace(b"\x00", b"0").decode()
 
         # Add myself
         if piecefield:
@@ -141,9 +150,12 @@ class UiWebsocketPlugin(object):
 
         wheres = {}
         wheres_raw = []
+
+        include_piecemap = "include_piecemap" in filter
+
         if "bigfile" in filter:
             wheres["size >"] = 1024 * 1024 * 10
-        if "ignore_piecemap" in filter:
+        if "ignore_piecemapmsgpack" in filter:
             wheres["not__inner_path__like"] = "%.piecemap.msgpack"
         if "downloaded" in filter:
             wheres_raw.append("(is_downloaded = 1 OR is_pinned = 1)")
@@ -173,7 +185,7 @@ class UiWebsocketPlugin(object):
                 row["address"] = address
 
             if row["size"] > 1024 * 1024:
-                has_info = self.addBigfileInfo(row)
+                has_info = self.addBigfileInfo(row, include_piecemap)
             else:
                 has_info = False
 
