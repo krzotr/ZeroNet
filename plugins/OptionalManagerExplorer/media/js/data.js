@@ -1,6 +1,6 @@
 class Page extends ZeroFrame {
     address = ""
-    limit = 40
+    limit = 50
     offset = 0
     last_number_of_files = 0
     site_info = {}
@@ -13,13 +13,13 @@ class Page extends ZeroFrame {
     STATE_DOWNLOADED = "downloaded"
     STATE_DOWNLOADING = "downloading"
 
-    ELEMENT_PAGINATION_NEXT = "pagination-next"
-    ELEMENT_PAGINATION_PREV = "pagination-prev"
-    ELEMENT_LIMIT = "limit"
-    ELEMENT_FILTERS = "filters"
-    ELEMENT_SORT = "sort"
-    ELEMENT_TABLE = "table"
-    ELEMENT_PIECEMAP = "piecemap"
+    ELEMENT_PAGINATION_NEXT = $("#pagination-next")
+    ELEMENT_PAGINATION_PREV = $("#pagination-prev")
+    ELEMENT_LIMIT = $("#limit")
+    ELEMENT_FILTERS = $("#filters")
+    ELEMENT_SORT = $("#sort")
+    ELEMENT_TABLE = $("#table")
+    ELEMENT_PIECEMAP = $("#piecemap")
 
     constructor(url) {
         super(url)
@@ -35,56 +35,46 @@ class Page extends ZeroFrame {
         this.STATE_STYLES[this.STATE_DOWNLOADING] = "table-warning"
 
         this.address = document.location.pathname.match(/([A-Za-z0-9\._-]+)/)[1]
+
+        this.setVars()
     }
 
     setVars() {
         this.getNumberOfTotalFiles()
 
-        let limit_element = document.getElementById(this.ELEMENT_LIMIT)
-
-        limit_element.onclick = () => {
-            let limit = limit_element.options[limit_element.selectedIndex].value
-
+        this.ELEMENT_LIMIT.click((event) => {
             this.is_in_progress = false
 
-            this.limit = parseInt(limit)
+            this.limit = parseInt($(event.currentTarget).val())
             this.offset = 0
             this.getFiles()
-        }
+        })
 
-        let filters_element = document.getElementById(this.ELEMENT_FILTERS)
-        filters_element.onclick = () => {
-            let filters = filters_element.options[filters_element.selectedIndex].value
-
+        this.ELEMENT_FILTERS.click((event) => {
             this.is_in_progress = false
 
-            this.filters = filters
+            this.filters = $(event.currentTarget).val()
             this.offset = 0
             this.getFiles()
-        }
+        })
 
-        let piecemap_element = document.getElementById(this.ELEMENT_PIECEMAP)
-        piecemap_element.onclick = () => {
+        this.ELEMENT_PIECEMAP.click((event) => {
             this.is_in_progress = false
 
-            this.piecemap = piecemap_element.checked
+            this.piecemap = $(event.currentTarget).is(':checked')
             this.offset = 0
             this.getFiles()
-        }
+        })
 
-        let sort_element = document.getElementById(this.ELEMENT_SORT)
-        sort_element.onclick = () => {
-            let sort = sort_element.options[sort_element.selectedIndex].value
-
+        this.ELEMENT_SORT.click((event) => {
             this.is_in_progress = false
 
-            this.sort = sort
+            this.sort = $(event.currentTarget).val()
             this.offset = 0
             this.getFiles()
-        }
+        })
 
-        let prev_element = document.getElementById(this.ELEMENT_PAGINATION_PREV)
-        prev_element.onclick = () => {
+        this.ELEMENT_PAGINATION_PREV.click((event) => {
             if (this.offset - this.limit < 0) {
                 alert("Out of range!")
                 return
@@ -94,10 +84,9 @@ class Page extends ZeroFrame {
 
             this.offset -= this.limit
             this.getFiles()
-        }
+        })
 
-        let next_element = document.getElementById(this.ELEMENT_PAGINATION_NEXT)
-        next_element.onclick = () => {
+        this.ELEMENT_PAGINATION_NEXT.click((event) => {
             if (this.limit > this.last_number_of_files) {
                 alert("Out of range")
                 return
@@ -107,7 +96,7 @@ class Page extends ZeroFrame {
 
             this.offset += this.limit
             this.getFiles()
-        }
+        })
     }
 
     onOpenWebsocket () {
@@ -123,6 +112,7 @@ class Page extends ZeroFrame {
         this.getFiles()
     }
 
+    // Todo
     getNumberOfTotalFiles() {
         this.cmd("siteInfo", {}, (site_info) => {
             this.site_info = site_info
@@ -132,8 +122,6 @@ class Page extends ZeroFrame {
     }
 
     getFiles () {
-        this.setVars()
-
         this.is_in_progress = true
 
         this.cmd("optionalFileList", {
@@ -150,8 +138,7 @@ class Page extends ZeroFrame {
 
             console.log("Got optionalFileList")
 
-            var table = document.getElementById(this.ELEMENT_TABLE)
-            table.innerHTML = ""
+            this.ELEMENT_TABLE.html('')
 
             var header_html = ""
             header_html += "<tbody class='thead-dark'>"
@@ -168,51 +155,59 @@ class Page extends ZeroFrame {
             header_html += "</tr>"
             header_html += "</tbody>"
 
-            table.insertAdjacentHTML("beforeend", header_html)
+            this.ELEMENT_TABLE.append(header_html)
 
             var id = this.offset + 1
             for (var i in resp) {
                 var row_html = this.renderRow(this.normalizeFile(resp[i]), id)
 
-                table.insertAdjacentHTML("beforeend", row_html)
+                this.ELEMENT_TABLE.append(row_html)
+
                 id += 1
             }
 
             this.last_number_of_files = resp.length
 
-            var events = document.getElementsByClassName("file_id")
+            // Bind events
+            this.ELEMENT_TABLE.find('.file-state-not-downloaded, .file-state-downloading')
+                .addClass('pointer')
+            .click((event) => {
+                var inner_path = $(event.currentTarget).closest('tr').find('.file-inner-path').data('file-inner-path')
 
-            for (let i = 0; i < events.length; i++) {
-                if (events[i].getAttribute("class").match(/completed/)) {
-                    continue
-                }
+                $(event.currentTarget)
+                    .css('color', '#0f0')
+                    .html("<span class='oi oi-circle-check'></span>")
 
-                events[i].onclick = () => {
-                    let inner_path_element = events[i].getElementsByClassName("inner_path")[0]
-                    let inner_path = inner_path_element.getAttribute('data-inner-path')
 
-                    this.cmd("fileNeed", inner_path + "|all")
-                }
-            }
+                this.downloadFile(inner_path)
+            })
 
             this.is_in_progress = false
         })
+    }
+
+    downloadFile(inner_path) {
+        this.cmd("fileNeed", inner_path + "|all")
     }
 
     renderRow(file, id) {
         var html = ""
 
         var piecemap = ""
+        var downloaded_percent = ""
 
         if (file.state != this.STATE_DOWNLOADED) {
-            piecemap = this.getPiecemapHtml(file.piecemap)
+            if (this.piecemap) {
+                piecemap = this.getPiecemapHtml(file.piecemap)
+            }
+
+            downloaded_percent = this.getProgressBarHTML(file.downloaded_percent)
         }
 
-
-        html = '<tr id="fid-' + file.file_id + '" class="file_id ' + this.STATE_STYLES[file.state] + '">'
+        html = '<tr id="fid-' + file.file_id + '" class="file-row ' + this.STATE_STYLES[file.state] + '">'
         html += "<td class='text-center'>" + id + "</td>"
-        html += "<td class='text-center'>" + this.STATE_SHORT[file.state] + "</td>"
-        html += "<td class='inner_path text-sm' data-inner-path='" + file.inner_path + "'><small>" + file.inner_path + "</small>" + this.getProgressBarHTML(file.downloaded_percent) + piecemap + "</td>"
+        html += "<td class='text-center file-state file-state-" + file.state + "'>" + this.STATE_SHORT[file.state] + "</td>"
+        html += "<td class='file-inner-path text-sm' data-file-inner-path='" + file.inner_path + "'><small>" + file.inner_path + "</small>" + downloaded_percent + piecemap + "</td>"
         html += "<td class='text-center'><small>" + Math.round(file.size / 1024 / 1024, 2) + "MB</small></td>"
         html += "<td class='text-center'><small>" + file.downloaded_percent + "%</small></td>"
         html += "<td class='text-center'><small>" + file.pieces_downloaded + " / " + file.pieces + "</small></td>"
@@ -226,8 +221,8 @@ class Page extends ZeroFrame {
     }
 
     getProgressBarHTML(percent) {
-        if (percent == 0) {
-            //return ''
+        if (percent == 100) {
+            return ''
         }
 
         var html = ""
