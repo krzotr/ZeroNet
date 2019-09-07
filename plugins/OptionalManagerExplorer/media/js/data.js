@@ -36,10 +36,10 @@ class Page extends ZeroFrame {
 
         this.address = document.location.pathname.match(/([A-Za-z0-9\._-]+)/)[1]
 
-        this.setVars()
+        this.setEvents()
     }
 
-    setVars() {
+    setEvents() {
         this.getNumberOfTotalFiles()
 
         this.ELEMENT_LIMIT.click((event) => {
@@ -144,14 +144,16 @@ class Page extends ZeroFrame {
             header_html += "<tbody class='thead-dark'>"
             header_html += "<tr>"
             header_html += "<th scope='col' class='text-center'>#</th>"
-            header_html += "<th scope='col' class='text-center'><abbr title='State of file: downloaded, downloading, not-downloaded'>State</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr id='download-selected' title='Download selected'><span class='oi oi-cloud-download'></span></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='State of file: downloaded, downloading, not-downloaded'>ST</abbr></th>"
             header_html += "<th scope='col' class='text-center'><abbr title='Path of file'>Inner Path</abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr title='Open URL new window'><span class='oi oi-external-link'></span></th>"
             header_html += "<th scope='col' class='text-center'><abbr title='Size of the file in MB'>Size</abbr></th>"
             header_html += "<th scope='col' class='text-center'><abbr title='Percent of completed file'>%</abbr></th>"
             header_html += "<th scope='col' class='text-center'><abbr title='Downloaded parts / Total parts'>D / T</abbr></th>"
             header_html += "<th scope='col' class='text-center'><abbr title='Number of peers'><span class='oi oi-people'></span></abbr></th>"
             header_html += "<th scope='col' class='text-center'><abbr title='Seeds / Leech'><span class='oi oi-people'></span> / <span class='oi oi-people'></span></abbr></th>"
-            header_html += "<th scope='col' class='text-center'><abbr title='Health of file'><span class='oi oi-signal'></span></abbr></th>"
+            header_html += "<th scope='col' class='text-center'><abbr id='select-health-files' title='Health of file'><span class='oi oi-signal'></span></abbr></th>"
             header_html += "</tr>"
             header_html += "</tbody>"
 
@@ -182,6 +184,32 @@ class Page extends ZeroFrame {
                 this.downloadFile(inner_path)
             })
 
+            $('#download-selected').click((event) => {
+                $(event.currentTarget).closest('table').find('.file-checkbox:checked').each((index, element) => {
+                    var inner_path = $(element).closest('tr').find('.file-inner-path').data('file-inner-path')
+
+                    $(element).prop("checked", false);
+
+                    this.downloadFile(inner_path)
+                })
+            })
+
+            $('#select-health-files').click((event) => {
+                $(event.currentTarget).closest('table').find('.file-row .file-health').each((index, element) => {
+                    var state = $(element).closest('tr').find('.file-state').not('.file-state-downloading')
+
+                    if (!state) {
+                        return
+                    }
+
+                    var health = $(element).data('file-health')
+
+                    if (health && health != 3) {
+                        $(element).closest('tr').find('.file-checkbox').prop("checked", "checked");
+                    }
+                })
+            })
+
             this.is_in_progress = false
         })
     }
@@ -204,16 +232,18 @@ class Page extends ZeroFrame {
             downloaded_percent = this.getProgressBarHTML(file.downloaded_percent)
         }
 
-        html = '<tr id="fid-' + file.file_id + '" class="file-row ' + this.STATE_STYLES[file.state] + '">'
+        html = '<tr class="file-row ' + this.STATE_STYLES[file.state] + '">'
         html += "<td class='text-center'>" + id + "</td>"
+        html += "<td class='text-center'><input class='file-checkbox' type='checkbox' id='fid-" + file.file_id + "' /></td>"
         html += "<td class='text-center file-state file-state-" + file.state + "'>" + this.STATE_SHORT[file.state] + "</td>"
         html += "<td class='file-inner-path text-sm' data-file-inner-path='" + file.inner_path + "'><small>" + file.inner_path + "</small>" + downloaded_percent + piecemap + "</td>"
+        html += "<td class='text-center'><a target=_blank href='../../../" + file.inner_path + "'><span class='oi oi-external-link'></span></a></td>"
         html += "<td class='text-center'><small>" + Math.round(file.size / 1024 / 1024, 2) + "MB</small></td>"
         html += "<td class='text-center'><small>" + file.downloaded_percent + "%</small></td>"
         html += "<td class='text-center'><small>" + file.pieces_downloaded + " / " + file.pieces + "</small></td>"
         html += "<td class='text-center'><small>" + file.peer + "</small></td>"
         html += "<td class='text-center'><small>" + file.peer_seed + " / " + file.peer_leech + "</small></td>"
-        html += "<td class='text-center' data-health='" + file.health + "'><span class='oi oi-signal signal-" + file.health + "'></span></td>"
+        html += "<td class='text-center file-health' data-file-health='" + file.health + "'><span class='oi oi-signal signal-" + file.health + "'></span></td>"
         html += "</tr>"
 
 
