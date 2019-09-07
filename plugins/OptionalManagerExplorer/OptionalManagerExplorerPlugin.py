@@ -56,3 +56,15 @@ class UiRequestPlugin(object):
             return self.actionFile(file_path)
 
         return super(UiRequestPlugin, self).actionUiMedia(path)
+
+
+@PluginManager.registerTo("Site")
+class SitePlugin(object):
+    def needFile(self, inner_path, *args, **kwargs):
+        if inner_path.endswith("|all"):
+            inner_path = inner_path[0:-4]
+
+            for ws in self.websockets:
+                ws.cmd("notification", ["info", "File <strong>%s</strong> added to queue." % inner_path, 7500])
+
+        return super(SitePlugin, self).needFile(inner_path, *args, **kwargs)
