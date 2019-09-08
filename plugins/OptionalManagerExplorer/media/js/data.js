@@ -34,7 +34,7 @@ class Page extends ZeroFrame {
         this.STATE_STYLES[this.STATE_DOWNLOADED] = "table-success"
         this.STATE_STYLES[this.STATE_DOWNLOADING] = "table-warning"
 
-        this.address = document.location.pathname.match(/([A-Za-z0-9\._-]+)/)[1]
+        this.address = document.location.search.match(/^\?address=([A-Za-z0-9\._-]+)&?/)[1]
 
         this.setEvents()
     }
@@ -215,7 +215,10 @@ class Page extends ZeroFrame {
     }
 
     downloadFile(inner_path) {
-        this.cmd("fileNeed", inner_path + "|all")
+        this.cmd("fileNeed", {
+            "inner_path": inner_path + "|all",
+            "priority": 10
+        })
     }
 
     renderRow(file, id) {

@@ -697,10 +697,10 @@ class UiWebsocket(object):
         self.response(to, body)
 
     @flag.async_run
-    def actionFileNeed(self, to, inner_path, timeout=300):
+    def actionFileNeed(self, to, inner_path, timeout=300, priority=6):
         try:
             with gevent.Timeout(timeout):
-                self.site.needFile(inner_path, priority=6)
+                self.site.needFile(inner_path, priority=priority)
         except Exception as err:
             return self.response(to, {"error": Debug.formatExceptionMessage(err)})
         return self.response(to, "ok")
