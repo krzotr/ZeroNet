@@ -46,7 +46,7 @@ class UiWebsocketPlugin(object):
         content_db.updatePeerNumbers()
         self.site.updateWebsocket(peernumber_updated=True)
 
-    def addBigfileInfo(self, row, include_piecemap=False):
+    def addBigfileInfo(self, row):
         global bigfile_sha512_cache
 
         content_db = self.site.content_manager.contents.db
@@ -69,13 +69,7 @@ class UiWebsocketPlugin(object):
         else:
             piecefield = None
 
-        if include_piecemap:
-            row["piecemap"] = {}
-
         if piecefield:
-            if include_piecemap:
-                row["piecemap"]["own"] = piecefield.replace(b"\x01", b"1").replace(b"\x00", b"0").decode()
-
             row["pieces"] = len(piecefield)
             row["pieces_downloaded"] = piecefield.count(b"\x01")
             row["downloaded_percent"] = 100 * row["pieces_downloaded"] / row["pieces"]
@@ -105,9 +99,6 @@ class UiWebsocketPlugin(object):
             else:
                 row["peer_leech"] += 1
 
-            if include_piecemap:
-                row["piecemap"][peer.key] = peer_piecefield.replace(b"\x01", b"1").replace(b"\x00", b"0").decode()
-
         # Add myself
         if piecefield:
             if row["pieces_downloaded"] == row["pieces"]:
@@ -119,7 +110,7 @@ class UiWebsocketPlugin(object):
 
     # Optional file functions
 
-    def actionOptionalFileList(self, to, address=None, orderby="time_downloaded DESC", limit=10, filter="downloaded", filter_inner_path=None, offset=0):
+    def actionOptionalFileList(self, to, address=None, orderby="time_downloaded DESC", limit=10, filter="downloaded", filter_inner_path=None):
         if not address:
             address = self.site.address
 
@@ -142,25 +133,15 @@ class UiWebsocketPlugin(object):
         if type(limit) != int:
             return self.response(to, "Invalid limit")
 
-        if type(offset) != int or offset < 0:
-            return self.response(to, "Invalid Offset")
-
         back = []
         content_db = self.site.content_manager.contents.db
 
         wheres = {}
         wheres_raw = []
-
-        include_piecemap = "include_piecemap" in filter
-
         if "bigfile" in filter:
             wheres["size >"] = 1024 * 1024 * 10
-        if "ignore_piecemapmsgpack" in filter:
-            wheres["not__inner_path__like"] = "%.piecemap.msgpack"
         if "downloaded" in filter:
             wheres_raw.append("(is_downloaded = 1 OR is_pinned = 1)")
-        if "notdownloaded" in filter:
-            wheres["is_downloaded"] = 0
         if "pinned" in filter:
             wheres["is_pinned"] = 1
         if filter_inner_path:
@@ -177,7 +158,7 @@ class UiWebsocketPlugin(object):
         else:
             query_wheres_raw = ""
 
-        query = "SELECT * FROM file_optional %s WHERE ? %s ORDER BY %s LIMIT %d OFFSET %d" % (join, query_wheres_raw, orderby, limit, offset)
+        query = "SELECT * FROM file_optional %s WHERE ? %s ORDER BY %s LIMIT %s" % (join, query_wheres_raw, orderby, limit)
 
         for row in content_db.execute(query, wheres):
             row = dict(row)
@@ -185,7 +166,7 @@ class UiWebsocketPlugin(object):
                 row["address"] = address
 
             if row["size"] > 1024 * 1024:
-                has_info = self.addBigfileInfo(row, include_piecemap)
+                has_info = self.addBigfileInfo(row)
             else:
                 has_info = False
 

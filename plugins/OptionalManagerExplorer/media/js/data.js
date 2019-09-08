@@ -124,8 +124,8 @@ class Page extends ZeroFrame {
     getFiles () {
         this.is_in_progress = true
 
-        this.cmd("optionalFileList", {
-            "filter": ["ignore_piecemapmsgpack", (this.piecemap ? "include_piecemap" : '')].concat(this.filters),
+        this.cmd("optionalFileListExplorer", {
+            "filter": ["ignore_piecemapmsgpack", "allfiles", (this.piecemap ? "include_piecemap" : '')].concat(this.filters),
             "limit": this.limit,
             "offset": this.offset,
             "orderby": this.sort,
@@ -358,6 +358,11 @@ class Page extends ZeroFrame {
             entity.state = this.STATE_DOWNLOADING
         } else {
             entity.state = this.STATE_NOT_DOWNLOADED
+        }
+
+
+        if (entity.downloaded_percent && entity.pieces == 0) {
+            entity.state = this.STATE_DOWNLOADED
         }
 
         // Set downloaded_percent
